@@ -16,6 +16,7 @@ import java.util.*;
 public class Archivio {
     public static EntityManagerFactory emf = Persistence.createEntityManagerFactory("unit-jpa");
     public static EntityManager em = emf.createEntityManager();
+    public static CatalogoDAO catalogoDAO = new CatalogoDAO(em);
     public static UtenteDAO utenteDAO = new UtenteDAO(em);
 
     public static final Logger LOGGER = LoggerFactory.getLogger(Archivio.class);
@@ -35,7 +36,7 @@ public class Archivio {
                     try {
                         System.out.println("Inserisci il codice ISBN del libro");
                         String libroIsbn = scanner.nextLine();
-                        if (CatalogoDAO.findByISBN(libroIsbn) != null) {
+                        if (catalogoDAO.findByISBN(libroIsbn) != null) {
                             throw new DuplicatoException("Esiste già un elemento con questo codice ISBN, riprova!");
                         }
                         System.out.println("Inserisci il titolo del libro");
@@ -75,7 +76,7 @@ public class Archivio {
                         libro.setAutore(autore);
                         libro.setGenere(genere);
 
-                        CatalogoDAO.save(libro);
+                        catalogoDAO.save(libro);
                         System.out.println("Libro aggiunto correttamente!");
 
                     } catch (DuplicatoException e) {
@@ -88,7 +89,7 @@ public class Archivio {
                     try {
                         System.out.println("Inserisci il codice ISBN della rivista");
                         String rivistaIsbn = scanner.nextLine();
-                        if (CatalogoDAO.findByISBN(rivistaIsbn) != null) {
+                        if (catalogoDAO.findByISBN(rivistaIsbn) != null) {
                             throw new DuplicatoException("Esiste già un elemento con questo codice ISBN, riprova!");
                         }
                         System.out.println("Inserisci il titolo della rivista");
@@ -126,7 +127,7 @@ public class Archivio {
                         rivista.setNumeroPagine(numeroPagineRivista);
                         rivista.setPeriodicita(Periodicita.valueOf(periodicita));
 
-                        CatalogoDAO.save(rivista);
+                        catalogoDAO.save(rivista);
                         System.out.println("Rivista aggiunta correttamente!");
 
                     } catch (DuplicatoException | IllegalArgumentException e) {
@@ -149,7 +150,7 @@ public class Archivio {
     }
 
     public static void rimuoviConISBN(String codiceIsbn) throws IsbnNonTrovatoException {
-        Catalogo pubblicazione = CatalogoDAO.removeFromCatalogo(codiceIsbn);
+        Catalogo pubblicazione = catalogoDAO.removeFromCatalogo(codiceIsbn);
 
         if (pubblicazione != null) {
             System.out.println("Pubblicazione con ISBN " + codiceIsbn + " rimossa correttamente.");
@@ -159,7 +160,7 @@ public class Archivio {
     }
 
     public static void ricercaConISBN(String codiceIsbn) throws IsbnNonTrovatoException {
-        Catalogo pubblicazione = CatalogoDAO.findByISBN(codiceIsbn);
+        Catalogo pubblicazione = catalogoDAO.findByISBN(codiceIsbn);
 
         if (pubblicazione != null) {
             pubblicazione.mostraDettagli();
@@ -169,7 +170,7 @@ public class Archivio {
     }
 
     public static void ricercaConAnnoPubblicazione(int annoPubblicazione) throws AnnoPubblicazioneException {
-        List<Catalogo> pubblicazioni = CatalogoDAO.findByAnnoDiPubblicazione(annoPubblicazione);
+        List<Catalogo> pubblicazioni = catalogoDAO.findByAnnoDiPubblicazione(annoPubblicazione);
 
         if (!pubblicazioni.isEmpty()) {
             pubblicazioni.forEach(pubblicazione -> {
@@ -182,7 +183,7 @@ public class Archivio {
     }
 
     public static void ricercaPerAutore(String autore) throws AutoreNonTrovatoException {
-        List<Catalogo> libri = CatalogoDAO.findByAutore(autore);
+        List<Catalogo> libri = catalogoDAO.findByAutore(autore);
 
         if (!libri.isEmpty()) {
             libri.forEach(libro -> {
@@ -195,7 +196,7 @@ public class Archivio {
     }
 
     public static void ricercaPerTitolo(String titolo) throws TitoloNonTrovatoException {
-        List<Catalogo> pubblicazioni = CatalogoDAO.findByPartialTitolo(titolo);
+        List<Catalogo> pubblicazioni = catalogoDAO.findByPartialTitolo(titolo);
 
         if (!pubblicazioni.isEmpty()) {
             pubblicazioni.forEach(pubblicazione -> {
@@ -213,7 +214,7 @@ public class Archivio {
                 .anyMatch(utente -> utente.getNumeroDiTessera().equals(numeroDiTessera));
 
         if (utenteEsistente) {
-            List<Catalogo> prestiti = CatalogoDAO.findPrestitiOfUtente(numeroDiTessera);
+            List<Catalogo> prestiti = catalogoDAO.findPrestitiOfUtente(numeroDiTessera);
             if (!prestiti.isEmpty()) {
                 System.out.println("I tuoi prestiti: ");
                 prestiti.forEach(prestito -> {
@@ -229,7 +230,7 @@ public class Archivio {
     }
 
     public static void ricercaPrestitiScaduti() throws PrestitiException {
-        List<Catalogo> prestitiScaduti = CatalogoDAO.findPrestitiScaduti();
+        List<Catalogo> prestitiScaduti = catalogoDAO.findPrestitiScaduti();
 
         if (!prestitiScaduti.isEmpty()) {
             System.out.println("Questi prestiti sono scaduti: ");
@@ -244,7 +245,7 @@ public class Archivio {
     }
 
     public static void aggiornaTestoPresenteInCatalogo(String codiceIsbn) throws IsbnNonTrovatoException {
-        Catalogo pubblicazione = CatalogoDAO.findByISBN(codiceIsbn);
+        Catalogo pubblicazione = catalogoDAO.findByISBN(codiceIsbn);
 
 
         System.out.println("Cosa vuoi aggiornare?");
@@ -299,13 +300,13 @@ public class Archivio {
                 }
         }
 
-        CatalogoDAO.update(pubblicazione);
+        catalogoDAO.update(pubblicazione);
         System.out.println("Testo aggiornato con successo!");
     }
 
     public static void mostraStatisticheCatalogo() {
 
-        List<Catalogo> catalogo = CatalogoDAO.findAll();
+        List<Catalogo> catalogo = catalogoDAO.findAll();
 
         if (catalogo.isEmpty()) {
             System.out.println("Il catalogo è vuoto.");
@@ -337,6 +338,7 @@ public class Archivio {
         testoPiuLungo.mostraDettagli();
         System.out.println("Media delle pagine di tutti gli elementi: " + mediaPagine);
     }
+
 
     public static void main(String[] args) throws DuplicatoException {
         System.out.println("Benvenuto nel nostro Catalogo! Premi: ");
